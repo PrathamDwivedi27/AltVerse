@@ -13,26 +13,29 @@ import './config/passport.js';
 
 const app = express();
 
-app.use(session({
-  secret: SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: false } // true in production with https
-}));
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-connectDB();
-
 app.use(cors({
   origin: "http://localhost:3000",
   credentials: true,
 }));
+
+
+app.use(session({
+  secret: SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: false ,   // true in production with https
+    httpOnly: true,   // Prevents client-side JavaScript from accessing the cookie
+   } 
+}));
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+connectDB();
 
 app.get('/', (req, res) => {
     res.send('AltVerse Backend has started.');

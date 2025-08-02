@@ -28,13 +28,13 @@ const getCurrentUser = async (req, res) => {
 const updateUserAvatar = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { avatarUrl } = req.body;
+    const { avatar } = req.body;
 
-    if (!avatarUrl) {
+    if (!avatar) {
       return res.status(400).json({ message: "Avatar URL is required" });
     }
 
-    const updatedUser = await userService.updateUserAvatar(userId, avatarUrl);
+    const updatedUser = await userService.updateUserAvatar(userId, avatar);
     if (!updatedUser) {
       return res
         .status(404)
@@ -61,13 +61,13 @@ const updateUserAvatar = async (req, res) => {
 const updateUsername = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { newUsername } = req.body;
+    const { username } = req.body;
 
-    if (!newUsername) {
-      return res.status(400).json({ message: "New username is required" });
+    if (!username) {
+      return res.status(400).json({ message: "username field is required" });
     }
 
-    const updatedUser = await userService.updateUsername(userId, newUsername);
+    const updatedUser = await userService.updateUsername(userId, username);
     if (!updatedUser) {
       return res
         .status(404)
