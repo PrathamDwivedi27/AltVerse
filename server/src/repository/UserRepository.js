@@ -63,7 +63,7 @@ class UserRepository {
   async updateUsername(userId, newName) {
     try {
       const user = await this.userModel
-        .findByIdAndUpdate(userId, { name: newName }, { new: true })
+        .findByIdAndUpdate(userId, { username: newName }, { new: true })
         .exec();
       if (!user) {
         logger.warn(`User with ID ${userId} not found for name update`);
