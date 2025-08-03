@@ -9,6 +9,8 @@ import cors from 'cors';
 import session from 'express-session';
 import passport from 'passport';
 import './config/passport.js';
+import { MONGO_DB_URI } from './config/server-config.js';
+import MongoStore from 'connect-mongo';
 
 
 const app = express();
@@ -27,7 +29,12 @@ app.use(session({
     secure: false ,   // true in production with https
     httpOnly: true,   // Prevents client-side JavaScript from accessing the cookie
     sameSite: 'lax', // Helps prevent CSRF attacks
-   } 
+   } ,
+   store: MongoStore.create({
+    mongoUrl: MONGO_DB_URI, // Your MongoDB connection string
+    collectionName: 'sessions', // Optional: name of the collection to store sessions
+    ttl: 14 * 24 * 60 * 60 // Optional: session time to live in seconds (e.g., 14 days)
+  })
 }));
 
 app.use(bodyParser.json());
