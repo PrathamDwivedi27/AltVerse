@@ -26,6 +26,7 @@ app.use(session({
   cookie: { 
     secure: false ,   // true in production with https
     httpOnly: true,   // Prevents client-side JavaScript from accessing the cookie
+    sameSite: 'lax', // Helps prevent CSRF attacks
    } 
 }));
 
