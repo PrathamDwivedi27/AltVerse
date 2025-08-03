@@ -103,6 +103,10 @@ class UniverseRepository {
             throw error;
         }
     }
+
+    async findByTitleAndCreator(title, creatorId) {
+        return await this.universeModel.findOne({ title, creator: creatorId });
+    }
 };
 
 export default UniverseRepository;

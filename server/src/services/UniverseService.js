@@ -1,9 +1,11 @@
 import UniverseRepository from "../repository/UniverseRepository.js";
+import UserRepository from "../repository/UserRepository.js";
 import logger from "../utils/logger.js";
 
 class UniverseService {
   constructor() {
     this.universeRepository = new UniverseRepository();
+    this.userRepository= new UserRepository();
   }
 
   async createUniverse({ title, rules, creator }) {
@@ -18,12 +20,22 @@ class UniverseService {
         throw new Error("Creator is required");
       }
 
+      const existing = await this.universeRepository.findByTitleAndCreator(title.trim(), creator);
+      if (existing) {
+        throw new Error("Universe with this title already exists for this user");
+      }
+
+
       const universe = await this.universeRepository.createUniverse({
         title: title.trim(),
         rules,
         creator,
         participants: [creator],
       });
+
+      await this.userRepository.addUniverseToCreated(creator, universe._id);
+      await this.userRepository.addUniverseToJoined(creator, universe._id);
+
       return universe;
     } catch (error) {
       logger.error("Error in createUniverse service:", error);

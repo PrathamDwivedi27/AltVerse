@@ -87,6 +87,29 @@ class UserRepository {
       );
     }
   }
+
+  async addUniverseToCreated(userId, universeId) {
+    try {
+      return await User.findByIdAndUpdate(userId, {
+        $addToSet: { createdUniverses: universeId },
+      });
+    } catch (err) {
+      logger.error('Error adding universe to created:', err);
+      throw err;
+    }
+  }
+
+  async addUniverseToJoined(userId, universeId) {
+    try {
+      return await User.findByIdAndUpdate(userId, {
+        $addToSet: { joinedUniverses: universeId },
+      });
+    } catch (err) {
+      logger.error('Error adding universe to joined:', err);
+      throw err;
+    }
+  }
+  
 }
 
 export default UserRepository;
