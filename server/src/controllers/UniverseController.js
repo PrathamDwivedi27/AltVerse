@@ -1,5 +1,10 @@
 import UniverseService from "../services/UniverseService.js";
-
+import jwt from "jsonwebtoken";
+import {INVITE_SECRET} from "../config/server-config.js";
+import { INVITE_EXPIRES_IN } from "../config/server-config.js";
+import { CLIENT_URL } from "../config/server-config.js";
+import User from "../models/userSchema.js";
+import Universe from "../models/universeSchema.js";
 
 const universeService = new UniverseService();
 
@@ -75,9 +80,85 @@ const updateUniverseTitle = async (req, res) => {
   }
 };
 
+const generateInviteLink = async (req, res)=>{
+  try {
+    const {id: universeId} = req.params;
+    const userId = req.user._id;
+
+    const universe = await universeService.getUniverseById(universeId);
+    if (!universe) {
+      return res.status(404).json({ message: "Universe not found" });
+    }
+
+    if ((universe.creator._id || universe.creator).toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Only the creator can generate an invite link" });
+    }
+
+    const token =jwt.sign(
+      {universeId},
+      INVITE_SECRET,
+      { expiresIn: INVITE_EXPIRES_IN }
+    );
+
+    const inviteLink = `${CLIENT_URL}/invite/${token}`;
+    return res.status(200).json({
+      message: "Invite link generated successfully",
+      link: inviteLink
+    });
+  } catch (error) {
+    return res.status(500).json({ 
+      message: error.message,
+      error: error.message
+     });
+    
+  }
+}
+
+const redeemInviteLink = async (req, res) => {
+  try {
+    const { token } = req.body;
+    const userId = req.user._id;
+
+    if (!token) {
+      return res.status(400).json({ message: "Invite token is required" });
+    }
+
+    const decoded = jwt.verify(token, INVITE_SECRET);
+    const {universeId} = decoded;
+
+    const universe= await universeService.getUniverseById(universeId);
+    if (!universe) {
+      return res.status(404).json({ message: "Universe not found" });
+    }
+
+    const alreadyIn = universe.participants.some(p => p.toString() === userId.toString());
+    if (alreadyIn) {
+      return res.status(400).json({ message: "You are already a participant in this universe" });
+    }
+
+    // Add to universe participants
+    await Universe.findByIdAndUpdate(universeId, {
+      $addToSet: { participants: userId }
+    });
+
+
+    await User.findByIdAndUpdate(userId, {
+      $addToSet: { joinedUniverses: universeId }
+    });
+  } catch (error) {
+    return res.status(500).json({ 
+      message: error.message,
+      error: error.message
+    });
+    
+  }
+};
+
 export {
     createUniverse,
     getMyUniverses,
     deleteUniverse,
-    updateUniverseTitle
+    updateUniverseTitle,
+    generateInviteLink,
+    redeemInviteLink
 }

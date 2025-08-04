@@ -34,7 +34,10 @@ const universeSchema = new mongoose.Schema({
   },
 
   creator: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  participants: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   timeline: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Event' }],
   lore: [{ type: mongoose.Schema.Types.ObjectId, ref: 'LoreEntry' }],
 
@@ -54,6 +57,10 @@ const universeSchema = new mongoose.Schema({
   }
 
 }, { timestamps: true });
+
+universeSchema.path('participants').validate(function(value) {
+  return value.length <= 10;
+}, 'A universe can have at most 10 participants.');
 
 const Universe = mongoose.model('Universe', universeSchema);
 

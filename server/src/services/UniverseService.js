@@ -128,6 +128,19 @@ class UniverseService {
       throw new Error(error.message || "Failed to update universe title");
     }
   }
+
+  async getUniverseById(universeId) {
+    try {
+      if (!universeId) {
+        throw new Error("Universe ID is required");
+      }
+      const universe = await this.universeRepository.getUniverseById(universeId);
+      return universe;
+    } catch (error) {
+      logger.error("Error in getUniverseById service:", error);
+      throw new Error(error.message || "Failed to fetch universe by ID");
+    }
+  }
 }
 
 export default UniverseService;
