@@ -154,11 +154,39 @@ const redeemInviteLink = async (req, res) => {
   }
 };
 
+const kickParticipant = async (req, res) => {
+  try {
+    const {id:universeId}= req.params;
+    const {participantId} = req.body;
+    const userId = req.user._id;
+
+    if (!universeId || !participantId) {
+      return res.status(400).json({ message: "Universe ID and participant ID are required" });
+    }
+
+    const kicked = await universeService.kickParticipant(universeId, userId, participantId);
+    if (!kicked) {
+      return res.status(403).json({ message: "Only the creator can kick participants" });
+    }
+
+    return res.status(200).json({
+      message: "Participant kicked successfully",
+      universe: kicked 
+      });
+  } catch (error) {
+    return res.status(500).json({ 
+      message: error.message ,
+      error: error.message
+    });
+  }
+};
+
 export {
     createUniverse,
     getMyUniverses,
     deleteUniverse,
     updateUniverseTitle,
     generateInviteLink,
-    redeemInviteLink
+    redeemInviteLink,
+    kickParticipant
 }

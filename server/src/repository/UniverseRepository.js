@@ -107,6 +107,28 @@ class UniverseRepository {
     async findByTitleAndCreator(title, creatorId) {
         return await this.universeModel.findOne({ title, creator: creatorId });
     }
+
+    async removeParticipant(universeId, userId) {
+        if (!universeId || !userId) {
+            logger.warn('Missing parameters for removing participant from universe');
+            throw new Error('Universe ID and user ID are required');
+        }
+        try {
+            const universe = await this.universeModel.findByIdAndUpdate(
+                universeId,
+                { $pull: { participants: userId } },
+                { new: true }
+            );
+            if (!universe) {
+                logger.warn(`Universe not found for ID: ${universeId}`);
+                throw new Error('Universe not found');
+            }
+            return universe;
+        } catch (error) {
+            logger.error('Error removing participant from universe:', error);
+            throw error;
+        }
+    }
 };
 
 export default UniverseRepository;

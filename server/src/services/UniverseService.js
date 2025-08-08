@@ -141,6 +141,40 @@ class UniverseService {
       throw new Error(error.message || "Failed to fetch universe by ID");
     }
   }
+
+  async kickParticipant(universeId, userId, participantId) {
+    try {
+      if (!universeId || !userId || !participantId) {
+        throw new Error("Universe ID, user ID, and participant ID are required");
+      }
+      const universe = await this.universeRepository.getUniverseById(universeId);
+      if (!universe) {
+        throw new Error("Universe not found");
+      }
+      if (
+        (universe.creator._id || universe.creator).toString() !==
+        userId.toString()
+      ) {
+        logger.warn(
+          `User ${userId} is not authorized to kick participants from universe ${universeId}`
+        );
+        throw new Error("Only creator can kick participants from this universe");
+      }
+      if (!universe.participants.some(p => p._id.toString() === participantId)) {
+        throw new Error("Participant not found in this universe");
+      }
+
+      const updatedUniverse = await this.universeRepository.removeParticipant(
+        universeId,
+        participantId
+      );
+      await this.userRepository.removeJoinedUniverse(participantId, universeId);
+      return updatedUniverse;
+    } catch (error) {
+      logger.error("Error in kickParticipant service:", error);
+      throw new Error(error.message || "Failed to kick participant from universe");
+    }
+  }
 }
 
 export default UniverseService;

@@ -90,7 +90,7 @@ class UserRepository {
 
   async addUniverseToCreated(userId, universeId) {
     try {
-      return await User.findByIdAndUpdate(userId, {
+      return await this.userModel.findByIdAndUpdate(userId, {
         $addToSet: { createdUniverses: universeId },
       });
     } catch (err) {
@@ -101,11 +101,23 @@ class UserRepository {
 
   async addUniverseToJoined(userId, universeId) {
     try {
-      return await User.findByIdAndUpdate(userId, {
+      return await this.userModel.findByIdAndUpdate(userId, {
         $addToSet: { joinedUniverses: universeId },
       });
     } catch (err) {
       logger.error('Error adding universe to joined:', err);
+      throw err;
+    }
+  }
+
+  async removeJoinedUniverse(userId, universeId) {
+    try {
+      const user=await this.userModel.findByIdAndUpdate(userId, {
+        $pull: { joinedUniverses: universeId },
+      });
+      return user;
+    } catch (err) {
+      logger.error('Error removing joined universe:', err);
       throw err;
     }
   }
