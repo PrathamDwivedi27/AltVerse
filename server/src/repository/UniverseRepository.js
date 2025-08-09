@@ -129,6 +129,20 @@ class UniverseRepository {
             throw error;
         }
     }
+
+    async updateUniverseTimeline(universeId, newEventId) {
+        try {
+            const updatedUniverse = await this.universeModel.findByIdAndUpdate(
+                universeId,
+                { $push: { timeline: newEventId } },
+                { new: true }
+            );
+            return updatedUniverse;
+        } catch (error) {
+            logger.error(`Error updating timeline for universe ID: ${universeId}`, error);
+            throw error;
+        }
+    }
 };
 
 export default UniverseRepository;

@@ -31,6 +31,7 @@ const eventSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+eventSchema.index({ universeId: 1 });
 const Event = mongoose.model("Event", eventSchema);
 
 export default Event;
