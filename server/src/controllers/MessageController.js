@@ -16,6 +16,8 @@ const createMessage = async (req, res) => {
       file
     });
 
+    io.to(universeId).emit('new-message', message);
+    logger.info(`Message created in universe ${universeId} by user ${req.user._id}`);
     return res.status(201).json({
       message: "Message sent successfully",
       data: message

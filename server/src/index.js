@@ -20,7 +20,7 @@ import socketHandler from './sockets/socketHandler.js';
 const app = express();
 const httpServer = createServer(app);
 
-const io = new Server(httpServer, {
+export const io = new Server(httpServer, {
   cors: {
     origin: "*", // Allow frontend dev origin
     credentials: true

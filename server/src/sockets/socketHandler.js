@@ -29,28 +29,6 @@ export default function socketHandler(io) {
             logger.info(`${user.username} left room: ${universeId}`);
         });
 
-        // 3. CHAT FEATURE
-        socket.on('send-message', async (msg) => {
-            // The HTML test sends 'content', but the schema needs 'text'.
-            const { universeId, senderId, type, content } = msg;
-            
-            // --- FIX: Match the new messageSchema ---
-            const newMessage = new Message({ 
-                universeId, 
-                sender: senderId, 
-                type: "text", // Hardcoding for this test
-                text: content // Map the 'content' from the client to the 'text' field
-            });
-            await newMessage.save();
-
-            // Populate sender info for the client
-            const populatedMessage = await Message.findById(newMessage._id).populate('sender', 'username profilePicture');
-            
-            // Broadcast to the room
-            io.to(universeId).emit('new-message', populatedMessage);
-            logger.info(`Message sent in universe ${universeId} by ${senderId}: ${content}`);
-        });
-
         // --- NEW: Typing Indicator Logic ---
         socket.on('start-typing', ({ universeId, user }) => {
             // Broadcast to everyone else in the room that this user is typing
@@ -61,7 +39,6 @@ export default function socketHandler(io) {
             // Broadcast to everyone else that the user has stopped typing
             socket.to(universeId).emit('user-stopped-typing');
         });
-        // --- END: Typing Indicator Logic ---
 
         // 4. KICK PLAYER NOTIFICATION
         socket.on('force-kick', ({ universeId, kickedUserId }) => {
@@ -204,7 +181,6 @@ export default function socketHandler(io) {
             if (socket.userId) {
                 onlineUsers.delete(socket.userId);
                 logger.info(`User disconnected: ${socket.userId}`);
-                // You can optionally emit a 'user-offline' event to all rooms they were in
             }
         });
     });
