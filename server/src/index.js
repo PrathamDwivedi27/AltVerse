@@ -66,7 +66,7 @@ app.get('/', (req, res) => {
 app.use("/api",apiRoutes);
 
 const setup_and_start_server = () => {
-  app.listen(PORT, () => {
+  httpServer.listen(PORT, () => {
     logger.info(`Server is running on port ${PORT}`);
   });
 }
