@@ -1,5 +1,6 @@
 import EventService from "../services/EventService.js";
 import logger from "../utils/logger.js";
+import { io } from '../index.js';
 
 
 const eventService = new EventService();
@@ -15,6 +16,8 @@ const createEvent = async (req, res) => {
 
     try {
         const newEvent = await eventService.createEvent({ universeId, prompt, submittedBy });
+        io.to(universeId).emit('new-event-added', newEvent);
+        logger.info(`New event created and broadcasted for universe ${universeId}`);
         return res.status(201).json(newEvent);
     } catch (error) {
         logger.error("Error creating event:", error);

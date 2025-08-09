@@ -50,114 +50,107 @@ export default function socketHandler(io) {
 
         // 5. GAME ROUND LOGIC
         socket.on('start-round', async ({ universeId, userId }) => {
-            if (gameRooms[universeId] && gameRooms[universeId].state !== 'finished') {
-                return; // Round already in progress
-            }
+            try {
+                if (gameRooms[universeId] && gameRooms[universeId].state !== 'finished') {
+                    return; // Round already in progress
+                }
 
-            const universe = await Universe.findById(universeId);
-            const creatorIsOnline = onlineUsers.has(universe.creator.toString());
+                const universe = await Universe.findById(universeId).lean();
+                if (!universe) {
+                    return; // Universe not found
+                }
 
-            // Authorization check: only creator can start if online, otherwise anyone can.
-            if (creatorIsOnline && universe.creator.toString() !== userId) {
-                return; // Creator is online, but someone else tried to start.
-            }
+                const creatorIsOnline = onlineUsers.has(universe.creator.toString());
 
-            // Initialize game state for the room
-            gameRooms[universeId] = {
-                state: 'prompting', // States: 'prompting', 'voting', 'finished'
-                prompts: [], // { prompt, userId, username }
-                votes: {}, // promptId -> [userId]
-                timers: {},
-            };
+                // Authorization check
+                if (creatorIsOnline && universe.creator.toString() !== userId) {
+                    // Optionally emit an error back to the user who tried to start
+                    socket.emit('round-error', { message: "Only the creator can start the round while they are online." });
+                    return;
+                }
 
-            io.to(universeId).emit('round-started');
+                // Initialize game state for the room
+                gameRooms[universeId] = {
+                    state: 'prompting',
+                    prompts: [], // Stores { prompt, userId, username }
+                    votes: {},   // Stores promptOwnerId -> [voterId]
+                    timers: {},
+                    roundStarter: socket.id // Keep track of who started the round
+                };
 
-            // --- Prompting Phase ---
-            gameRooms[universeId].timers.promptTimer = setTimeout(() => {
-                const room = gameRooms[universeId];
-                if (!room || room.state !== 'prompting') return;
+                io.to(universeId).emit('round-started');
+                logger.info(`Round started in universe ${universeId}`);
 
-                room.state = 'voting';
-                io.to(universeId).emit('voting-started', room.prompts);
+                // --- Prompting Phase Timer ---
+                gameRooms[universeId].timers.promptTimer = setTimeout(() => {
+                    const room = gameRooms[universeId];
+                    if (!room || room.state !== 'prompting') return;
 
-                // --- Voting Phase ---
-                room.timers.voteTimer = setTimeout(async () => {
-                    if (!room || room.state !== 'voting') return;
-                    
-                    // --- Determine Winner ---
-                    let winningPrompt = null;
-                    let maxVotes = -1;
+                    room.state = 'voting';
+                    io.to(universeId).emit('voting-started', room.prompts);
+                    logger.info(`Voting started in universe ${universeId}`);
 
-                    // Find the prompt(s) with the most votes
-                    const voteCounts = {};
-                    for (const prompt of room.prompts) {
-                        const promptId = prompt.userId; // Using userId as a unique prompt ID for the round
-                        voteCounts[promptId] = room.votes[promptId] ? room.votes[promptId].length : 0;
-                    }
+                    // --- Voting Phase Timer ---
+                    room.timers.voteTimer = setTimeout(async () => {
+                        if (!room || room.state !== 'voting') return;
+                        
+                        let winningPrompt = null;
+                        let maxVotes = -1;
 
-                    // In case of a tie, the first submitted prompt wins. `prompts` array is already in order.
-                    for (const prompt of room.prompts) {
-                        const promptId = prompt.userId;
-                        if (voteCounts[promptId] > maxVotes) {
-                            maxVotes = voteCounts[promptId];
-                            winningPrompt = prompt;
-                        }
-                    }
-
-                    // Save the winning event to the database
-                    if (winningPrompt) {
-                        // This is where you would call your AI to get the outcome and mapEffect
-                        const aiGeneratedOutcome = {
-                            content: `As a result of "${winningPrompt.prompt}", alien forces attacked the Southern Citadel, leaving it in ruins.`,
-                            resultType: "chaotic",
-                            mapEffect: {
-                                type: 'pulse_effect',
-                                coordinates: [450, 800], // These coordinates would ideally come from the AI or a lookup
-                                description: `Alien Attack on Southern Citadel (Year ${new Date().getFullYear()})`,
-                                icon: 'explosion'
-                            }
-                        };
-
-                        const newEvent = new Event({
-                            universeId: universeId,
-                            prompt: winningPrompt.prompt,
-                            submittedBy: winningPrompt.userId,
-                            aiOutcome: aiGeneratedOutcome
+                        const voteCounts = {};
+                        room.prompts.forEach(p => {
+                            const count = room.votes[p.userId] ? room.votes[p.userId].length : 0;
+                            voteCounts[p.userId] = count;
                         });
-                        await newEvent.save();
-                        
-                        await Universe.findByIdAndUpdate(universeId, { $push: { timeline: newEvent._id } });
 
-                        io.to(universeId).emit('round-ended', { winner: winningPrompt, event: newEvent });
-                        
-                        // --- BROADCAST THE MAP UPDATE ---
-                        io.to(universeId).emit('map-update', newEvent);
-                        // --- END BROADCAST ---
+                        // Find the winner (first submitted in case of a tie)
+                        for (const prompt of room.prompts) {
+                            if (voteCounts[prompt.userId] > maxVotes) {
+                                maxVotes = voteCounts[prompt.userId];
+                                winningPrompt = prompt;
+                            }
+                        }
 
-                    } else {
-                        io.to(universeId).emit('round-ended', { winner: null, message: "No prompts were submitted or voted on." });
-                    }
+                        // If there's a winner, trigger the event creation on the client-side
+                        if (winningPrompt) {
+                            // The client of the person who started the round is responsible for calling the API
+                            io.to(room.roundStarter).emit('create-event-from-prompt', {
+                                universeId: universeId,
+                                prompt: winningPrompt.prompt,
+                                submittedBy: winningPrompt.userId
+                            });
+                            logger.info(`Winning prompt selected for ${universeId}. Notifying round starter to create event.`);
+                        } else {
+                            io.to(universeId).emit('round-ended-no-winner', { message: "No prompts were submitted or voted on." });
+                        }
 
-                    // Clean up room state
-                    delete gameRooms[universeId];
+                        // Clean up room state
+                        delete gameRooms[universeId];
 
-                }, 30000); // 30 seconds for voting
+                    }, 30000); // 30 seconds for voting
+                }, 30000); // 30 seconds for prompting
 
-            }, 30000); // 30 seconds for prompting
+            } catch (error) {
+                logger.error("Error in 'start-round' handler:", error);
+                socket.emit('round-error', { message: "A server error occurred while starting the round." });
+            }
         });
 
         socket.on('submit-prompt', ({ universeId, prompt, user }) => {
             const room = gameRooms[universeId];
+            // Check if prompting is active and if user has already submitted
             if (room && room.state === 'prompting' && !room.prompts.some(p => p.userId === user._id)) {
-                room.prompts.push({ prompt, userId: user._id, username: user.username });
-                io.to(universeId).emit('prompt-received', { username: user.username });
+                const newPrompt = { prompt, userId: user._id, username: user.username };
+                room.prompts.push(newPrompt);
+                // Broadcast the new prompt to everyone in the room immediately
+                io.to(universeId).emit('new-prompt-submitted', newPrompt);
             }
         });
 
         socket.on('cast-vote', ({ universeId, promptOwnerId, voterId }) => {
             const room = gameRooms[universeId];
             if (room && room.state === 'voting') {
-                // Ensure user hasn't voted yet
+                // Ensure user hasn't voted yet in this round
                 const hasVoted = Object.values(room.votes).flat().includes(voterId);
                 if (hasVoted) return;
 
@@ -166,13 +159,9 @@ export default function socketHandler(io) {
                 }
                 room.votes[promptOwnerId].push(voterId);
                 
-                // Broadcast updated vote counts
-                const voteCounts = {};
-                for (const prompt of room.prompts) {
-                    const pId = prompt.userId;
-                    voteCounts[pId] = room.votes[pId] ? room.votes[pId].length : 0;
-                }
-                io.to(universeId).emit('vote-update', voteCounts);
+                // Broadcast updated vote counts for the live voting feature
+                const currentVoteCount = room.votes[promptOwnerId].length;
+                io.to(universeId).emit('vote-update', { promptOwnerId, count: currentVoteCount });
             }
         });
 

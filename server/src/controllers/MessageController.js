@@ -1,5 +1,6 @@
 import MessageService from "../services/MessageService.js";
 import logger from "../utils/logger.js";
+import {io} from '../index.js';
 
 const messageService = new MessageService();
 
