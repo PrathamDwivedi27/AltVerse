@@ -1,6 +1,7 @@
 import Message from '../models/messageSchema.js';
 import Event from '../models/eventSchema.js';
 import Universe from '../models/universeSchema.js';
+import logger from '../utils/logger.js';
 
 // In-memory storage for real-time data
 const onlineUsers = new Map(); // Maps userId -> { socketId, username }
@@ -10,7 +11,7 @@ export default function socketHandler(io) {
     io.on('connection', (socket) => {
         // 1. USER AUTHENTICATION & CONNECTION
         socket.on('authenticate', (user) => {
-            console.log(`User authenticated: ${user.username} with socket ${socket.id}`);
+            logger.info(`User authenticated: ${user.username} with socket ${socket.id}`);
             onlineUsers.set(user._id.toString(), { socketId: socket.id, username: user.username });
             socket.userId = user._id.toString(); // Attach userId to the socket object
         });
@@ -19,13 +20,13 @@ export default function socketHandler(io) {
         socket.on('join-room', async ({ universeId, user }) => {
             socket.join(universeId);
             io.to(universeId).emit('user-joined', `${user.username} has entered the universe.`);
-            console.log(`${user.username} joined room: ${universeId}`);
+            logger.info(`${user.username} joined room: ${universeId}`);
         });
 
         socket.on('leave-room', ({ universeId, user }) => {
             socket.leave(universeId);
             io.to(universeId).emit('user-left', `${user.username} has left the universe.`);
-            console.log(`${user.username} left room: ${universeId}`);
+            logger.info(`${user.username} left room: ${universeId}`);
         });
 
         // 3. CHAT FEATURE
@@ -47,6 +48,7 @@ export default function socketHandler(io) {
             
             // Broadcast to the room
             io.to(universeId).emit('new-message', populatedMessage);
+            logger.info(`Message sent in universe ${universeId} by ${senderId}: ${content}`);
         });
 
         // --- NEW: Typing Indicator Logic ---
@@ -201,7 +203,7 @@ export default function socketHandler(io) {
         socket.on('disconnect', () => {
             if (socket.userId) {
                 onlineUsers.delete(socket.userId);
-                console.log(`User disconnected: ${socket.userId}`);
+                logger.info(`User disconnected: ${socket.userId}`);
                 // You can optionally emit a 'user-offline' event to all rooms they were in
             }
         });
