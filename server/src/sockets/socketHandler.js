@@ -2,6 +2,23 @@ import Universe from '../models/universeSchema.js';
 import logger from '../utils/logger.js';
 import { onlineUsers, gameRooms } from './socketState.js';
 
+const getOnlineUsersInRoom = (io, universeId) => {
+    const online = [];
+    const room = io.sockets.adapter.rooms.get(universeId);
+    if (room) {
+        room.forEach(socketId => {
+            // Find the user associated with this socketId in our global map
+            for (const [userId, userInfo] of onlineUsers.entries()) {
+                if (userInfo.socketId === socketId) {
+                    online.push({ userId, username: userInfo.username });
+                    break;
+                }
+            }
+        });
+    }
+    return online;
+};
+
 
 export default function socketHandler(io) {
     io.on('connection', (socket) => {
@@ -17,12 +34,18 @@ export default function socketHandler(io) {
             socket.join(universeId);
             io.to(universeId).emit('user-joined', `${user.username} has entered the universe.`);
             logger.info(`${user.username} joined room: ${universeId}`);
+
+            const usersInRoom = getOnlineUsersInRoom(io, universeId);
+            io.to(universeId).emit('online-users-update', usersInRoom);
         });
 
         socket.on('leave-room', ({ universeId, user }) => {
             socket.leave(universeId);
             io.to(universeId).emit('user-left', `${user.username} has left the universe.`);
             logger.info(`${user.username} left room: ${universeId}`);
+
+            const usersInRoom = getOnlineUsersInRoom(io, universeId);
+            io.to(universeId).emit('online-users-update', usersInRoom);
         });
 
         // --- NEW: Typing Indicator Logic ---
@@ -159,6 +182,17 @@ export default function socketHandler(io) {
             if (socket.userId) {
                 onlineUsers.delete(socket.userId);
                 logger.info(`User disconnected: ${socket.userId}`);
+
+                socket.rooms.forEach(room => {
+                    if (room !== socket.id) {
+                        if (disconnectedUser) {
+                            io.to(room).emit('user-left', `${disconnectedUser.username} has left the universe.`);
+                        }
+                        // --- ADDITION: Broadcast the updated online list ---
+                        const usersInRoom = getOnlineUsersInRoom(io, room);
+                        io.to(room).emit('online-users-update', usersInRoom);
+                    }
+                });
             }
         });
     });
