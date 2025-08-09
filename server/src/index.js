@@ -11,9 +11,23 @@ import passport from 'passport';
 import './config/passport.js';
 import { MONGO_DB_URI } from './config/server-config.js';
 import MongoStore from 'connect-mongo';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import mongoose from 'mongoose';
+import socketHandler from './sockets/socketHandler.js';
 
 
 const app = express();
+const httpServer = createServer(app);
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*", // Allow frontend dev origin
+    credentials: true
+  }
+});
+
+socketHandler(io);
 
 app.use(cors({
   origin: "http://localhost:3000",

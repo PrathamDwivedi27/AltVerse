@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Socket.IO Universe Test</title>
+</head>
+<body>
+  <h1>Socket.IO Universe Test</h1>
+
+  <div>
+    <label>User ID:</label>
+    <input id="userId" value="64f1234567890abc12345678" />
+    <label>Username:</label>
+    <input id="username" value="TestUser" />
+    <button onclick="authenticateUser()">Authenticate</button>
+  </div>
+
+  <div>
+    <label>Universe ID:</label>
+    <input id="universeId" value="64f876543210abc987654321" />
+    <button onclick="joinRoom()">Join Room</button>
+    <button onclick="leaveRoom()">Leave Room</button>
+  </div>
+
+  <div>
+    <input id="messageInput" placeholder="Type a message" />
+    <button onclick="sendMessage()">Send Message</button>
+  </div>
+
+  <ul id="log"></ul>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const socket = io("http://localhost:4000"); // Replace with your PORT if different
+
+    function log(message) {
+      const li = document.createElement("li");
+      li.textContent = message;
+      document.getElementById("log").appendChild(li);
+    }
+
+    // LISTENERS
+    socket.on("connect", () => log(`Connected: ${socket.id}`));
+    socket.on("disconnect", () => log(`Disconnected`));
+    socket.on("user-joined", (msg) => log(`JOIN: ${msg}`));
+    socket.on("user-left", (msg) => log(`LEAVE: ${msg}`));
+    socket.on("new-message", (data) => log(`MESSAGE: ${JSON.stringify(data)}`));
+
+    function authenticateUser() {
+      const user = {
+        _id: document.getElementById("userId").value,
+        username: document.getElementById("username").value
+      };
+      socket.emit("authenticate", user);
+      log(`Authenticated as ${user.username}`);
+    }
+
+    function joinRoom() {
+      const universeId = document.getElementById("universeId").value;
+      const user = {
+        _id: document.getElementById("userId").value,
+        username: document.getElementById("username").value
+      };
+      socket.emit("join-room", { universeId, user });
+    }
+
+    function leaveRoom() {
+      const universeId = document.getElementById("universeId").value;
+      const user = {
+        _id: document.getElementById("userId").value,
+        username: document.getElementById("username").value
+      };
+      socket.emit("leave-room", { universeId, user });
+    }
+
+    function sendMessage() {
+      const msg = {
+        universeId: document.getElementById("universeId").value,
+        senderId: document.getElementById("userId").value,
+        type: "text",
+        content: document.getElementById("messageInput").value
+      };
+      socket.emit("send-message", msg);
+    }
+  </script>
+</body>
+</html>
