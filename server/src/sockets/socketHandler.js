@@ -1,11 +1,7 @@
-import Message from '../models/messageSchema.js';
-import Event from '../models/eventSchema.js';
 import Universe from '../models/universeSchema.js';
 import logger from '../utils/logger.js';
+import { onlineUsers, gameRooms } from './socketState.js';
 
-// In-memory storage for real-time data
-const onlineUsers = new Map(); // Maps userId -> { socketId, username }
-const gameRooms = {}; // Maps universeId -> { state, prompts, votes, timers, etc. }
 
 export default function socketHandler(io) {
     io.on('connection', (socket) => {
@@ -40,15 +36,8 @@ export default function socketHandler(io) {
             socket.to(universeId).emit('user-stopped-typing');
         });
 
-        // 4. KICK PLAYER NOTIFICATION
-        socket.on('force-kick', ({ universeId, kickedUserId }) => {
-            const kickedUserSocket = onlineUsers.get(kickedUserId.toString());
-            if (kickedUserSocket) {
-                io.to(kickedUserSocket.socketId).emit('you-were-kicked', { universeId });
-            }
-        });
 
-        // 5. GAME ROUND LOGIC
+        // 4. GAME ROUND LOGIC
         socket.on('start-round', async ({ universeId, userId }) => {
             try {
                 if (gameRooms[universeId] && gameRooms[universeId].state !== 'finished') {
@@ -57,14 +46,14 @@ export default function socketHandler(io) {
 
                 const universe = await Universe.findById(universeId).lean();
                 if (!universe) {
-                    return; // Universe not found
+                    return;
                 }
 
                 const creatorIsOnline = onlineUsers.has(universe.creator.toString());
+                const creatorId = (universe.creator._id || universe.creator).toString();
 
                 // Authorization check
-                if (creatorIsOnline && universe.creator.toString() !== userId) {
-                    // Optionally emit an error back to the user who tried to start
+                if (creatorIsOnline && creatorId !== userId.toString()) {
                     socket.emit('round-error', { message: "Only the creator can start the round while they are online." });
                     return;
                 }
@@ -165,7 +154,7 @@ export default function socketHandler(io) {
             }
         });
 
-        // 6. DISCONNECTION
+        // 5. DISCONNECTION
         socket.on('disconnect', () => {
             if (socket.userId) {
                 onlineUsers.delete(socket.userId);

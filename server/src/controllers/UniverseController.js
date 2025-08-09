@@ -5,6 +5,9 @@ import { INVITE_EXPIRES_IN } from "../config/server-config.js";
 import { CLIENT_URL } from "../config/server-config.js";
 import User from "../models/userSchema.js";
 import Universe from "../models/universeSchema.js";
+import { onlineUsers } from '../sockets/socketState.js';
+import { io } from "../index.js";
+
 
 const universeService = new UniverseService();
 
@@ -145,6 +148,10 @@ const redeemInviteLink = async (req, res) => {
     await User.findByIdAndUpdate(userId, {
       $addToSet: { joinedUniverses: universeId }
     });
+
+    return res.status(200).json({
+      message: "Invite redeemed successfully",
+    });
   } catch (error) {
     return res.status(500).json({ 
       message: error.message,
@@ -167,6 +174,11 @@ const kickParticipant = async (req, res) => {
     const kicked = await universeService.kickParticipant(universeId, userId, participantId);
     if (!kicked) {
       return res.status(403).json({ message: "Only the creator can kick participants" });
+    }
+
+    const kickedUserSocket = onlineUsers.get(participantId.toString());
+    if (kickedUserSocket) {
+      io.to(kickedUserSocket.socketId).emit('you-were-kicked', { universeId });
     }
 
     return res.status(200).json({
