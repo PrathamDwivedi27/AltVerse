@@ -17,3 +17,5 @@ export const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
 export const CLOUDINARY_FOLDER = process.env.CLOUDINARY_FOLDER;
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 export const GEMINI_MODEL_NAME = process.env.GEMINI_MODEL_NAME;
+export const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID;
+export const GCP_MODEL_NAME = process.env.GCP_MODEL_NAME;
