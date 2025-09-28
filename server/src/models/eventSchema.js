@@ -26,17 +26,6 @@ const eventSchema = new mongoose.Schema(
         enum: ["positive", "neutral", "chaotic"],
         default: "neutral",
       },
-      mapEffect: {
-        type: {
-          type: String,
-          enum: ['marker', 'area_highlight', 'pulse_effect'],
-        },
-        coordinates: {
-          type: [Number], // [x, y]
-        },
-        description: String,
-        icon: String, // e.g., 'explosion', 'new-city'
-      }
     },
   },
   { timestamps: true }

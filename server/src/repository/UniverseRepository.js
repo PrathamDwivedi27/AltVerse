@@ -143,6 +143,27 @@ class UniverseRepository {
             throw error;
         }
     }
+
+    /**
+     * Adds a new event's map data to a universe's mapData.events array.
+     * @param {string} universeId - The ID of the universe to update.
+     * @param {object} mapEventData - The data for the new map event pin.
+     * @returns {Promise<Document>} The updated universe document.
+     */
+    async addEventToMap(universeId, mapEventData) {
+        try {
+            // Use findByIdAndUpdate with $push to efficiently add the new event to the mapData.events array
+            const updatedUniverse = await this.universeModel.findByIdAndUpdate(
+                universeId,
+                { $push: { "mapData.events": mapEventData } },
+                { new: true } // This option returns the document after the update has been applied
+            );
+            return updatedUniverse;
+        } catch (error) {
+            logger.error(`Error adding event to map for universe ID: ${universeId}`, error);
+            throw error;
+        }
+    }
 };
 
 export default UniverseRepository;

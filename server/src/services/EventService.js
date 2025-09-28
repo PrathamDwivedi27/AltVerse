@@ -49,11 +49,12 @@ class EventService {
                 3. If an unrealistic or fantastical event is suggested (e.g., a sudden black hole), give it a plausible in-universe explanation (e.g., "scientists had predicted it after the Andromeda–Milky Way drift detection decades ago").
                 4. The outcome should be a single, vivid paragraph that makes players feel like they are part of the unfolding world.
                 5. After writing, classify the event’s impact on the universe as 'positive', 'neutral', or 'chaotic'.
+                6. Use simple english only. No complex words.
 
                 Return a valid JSON object with:
                 {
-                "content": "story paragraph",
-                "resultType": "positive | neutral | chaotic"
+                    "content": "story paragraph",
+                    "resultType": "positive | neutral | chaotic"
                 }
                 `;
 
@@ -64,13 +65,11 @@ class EventService {
                 universeId,
                 prompt,
                 submittedBy,
-                aiOutcome: {
-                    content: aiOutcome.content,
-                    resultType: aiOutcome.resultType || "neutral",
-                },
+                aiOutcome
             });
-
+            
             await this.universeRepository.updateUniverseTimeline(universeId, newEvent._id);
+
             return newEvent;
         } catch (error) {
             logger.error("Error in EventService while creating event:", error);

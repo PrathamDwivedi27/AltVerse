@@ -6,7 +6,11 @@ const loreEntrySchema = new mongoose.Schema({
         ref: 'Universe',
         required: true
     },
-
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     content: {
         type: String,
         required: true
@@ -15,11 +19,7 @@ const loreEntrySchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Event',
         required: true
-    },
-    createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-    },
+    }
 },{timestamps: true});
 
 const LoreEntry = mongoose.model('LoreEntry', loreEntrySchema);
