@@ -14,11 +14,6 @@ const loreEntrySchema = new mongoose.Schema({
     content: {
         type: String,
         required: true
-    },
-    eventId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Event',
-        required: true
     }
 },{timestamps: true});
 

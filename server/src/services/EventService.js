@@ -1,12 +1,14 @@
 import EventRepository from "../repository/EventRepository.js";
 import logger from "../utils/logger.js";
 import UniverseRepository from "../repository/UniverseRepository.js";
-import { fetchGeminiResponse } from "../utils/gemini.js";
+import LoreService from "./LoreService.js";
+import { generateEventOutcome } from "../utils/gemini.js";
 
 class EventService {
     constructor() {
         this.eventRepository = new EventRepository();
         this.universeRepository = new UniverseRepository();
+        this.loreService = new LoreService();
     }
 
     async createEvent({ universeId, prompt, submittedBy }) {
@@ -59,7 +61,7 @@ class EventService {
                 `;
 
 
-            const aiOutcome = await fetchGeminiResponse(fullPrompt);
+            const aiOutcome = await generateEventOutcome(fullPrompt);
 
             const newEvent =await this.eventRepository.createEvent( {
                 universeId,
@@ -67,8 +69,9 @@ class EventService {
                 submittedBy,
                 aiOutcome
             });
-            
+
             await this.universeRepository.updateUniverseTimeline(universeId, newEvent._id);
+            await this.loreService.createEventLore(universe, newEvent);
 
             return newEvent;
         } catch (error) {

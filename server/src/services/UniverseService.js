@@ -1,11 +1,13 @@
 import UniverseRepository from "../repository/UniverseRepository.js";
 import UserRepository from "../repository/UserRepository.js";
 import logger from "../utils/logger.js";
+import LoreService from "./LoreService.js";
 
 class UniverseService {
   constructor() {
     this.universeRepository = new UniverseRepository();
     this.userRepository= new UserRepository();
+    this.loreService = new LoreService();
   }
 
   async createUniverse({ title, rules, creator }) {
@@ -36,7 +38,11 @@ class UniverseService {
       await this.userRepository.addUniverseToCreated(creator, universe._id);
       await this.userRepository.addUniverseToJoined(creator, universe._id);
 
-      return universe;
+      await this.loreService.createUniverseLore(universe);
+
+      const updatedUniverse = await this.universeRepository.getUniverseById(universe._id);
+
+      return updatedUniverse;
     } catch (error) {
       logger.error("Error in createUniverse service:", error);
       throw new Error(error.message || "Failed to create universe");

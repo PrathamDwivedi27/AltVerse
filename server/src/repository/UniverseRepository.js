@@ -144,6 +144,15 @@ class UniverseRepository {
         }
     }
 
+    async addLore(universeId, loreId) {
+        return Universe.findByIdAndUpdate(
+            universeId,
+            { $push: { lore: loreId } },
+            { new: true }
+        );
+    }
+
+
     /**
      * Adds a new event's map data to a universe's mapData.events array.
      * @param {string} universeId - The ID of the universe to update.
