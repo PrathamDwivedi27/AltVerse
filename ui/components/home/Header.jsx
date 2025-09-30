@@ -1,6 +1,8 @@
+import { useAuth } from "@/app/contexts/AuthContext";
 import { MountainIcon } from "lucide-react";
 
 export default function Header() {
+    const {login}=useAuth();
   return (
     <header className="fixed top-0 left-0 right-0 z-50 px-6 lg:px-10 h-16 flex items-center bg-background/40 backdrop-blur-sm border-b border-white/10">
       {/* Logo - Left */}
@@ -39,7 +41,10 @@ export default function Header() {
       {/* Right CTA */}
       <div className="ml-auto">
         <a
-          href="#explore"
+        onClick={e => {
+            e.preventDefault();
+            login();
+        }}
           className="px-4 py-2 rounded-xl bg-gradient-to-r from-[oklch(0.7_0.18_210)] to-[oklch(0.12_0.02_250)] text-sm font-semibold text-white shadow-lg hover:scale-105 hover:shadow-[0_0_18px_oklch(0.7_0.18_210)] transition duration-300"
         >
           Let&apos;s Go 🚀

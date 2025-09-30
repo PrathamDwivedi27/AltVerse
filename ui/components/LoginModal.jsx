@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 const GoogleLogo = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -19,6 +20,7 @@ const GoogleLogo = () => (
 );
 
 export default function LoginModal({ isOpen, onOpenChange }) {
+  const {login} =useAuth();
   return (
     <Dialog
       open={isOpen}
@@ -43,7 +45,9 @@ export default function LoginModal({ isOpen, onOpenChange }) {
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center justify-center space-x-2 py-6 px-4">
-          <Button className="w-full bg-primary text-primary-foreground font-semibold hover:bg-primary/90 flex items-center gap-3 cursor-pointer">
+          <Button 
+            onClick={login}
+            className="w-full bg-primary text-primary-foreground font-semibold hover:bg-primary/90 flex items-center gap-3 cursor-pointer">
             <GoogleLogo />
             Sign in with Google
           </Button>

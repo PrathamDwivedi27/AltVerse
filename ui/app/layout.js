@@ -1,5 +1,6 @@
 import { Orbitron, Exo_2 } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "./contexts/AuthContext";
 
 // Orbitron for headers
 const orbitron = Orbitron({
@@ -26,7 +27,9 @@ export default function RootLayout({ children }) {
       <body
         className={`${orbitron.variable} ${exo2.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
