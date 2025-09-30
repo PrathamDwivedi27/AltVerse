@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* globals.css */
+
+/* Body text (Exo 2) */
+body {
+  font-family: var(--font-exo2), sans-serif;
+}
+
+/* Headers (Orbitron) */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-orbitron), sans-serif;
+  
+}
